@@ -27,14 +27,14 @@ int combustivel = 400;
 int pontuacao = 1;
 int colisao = 0;
 int vicio = 1;//Serve para, ao final de cada jogo, verificar se o usuario deseja jogar novamente
-struct T{
-    int linha, coluna;
+struct inimigo{
     int municao;
 };
-struct O{
-    int linha, coluna;
+struct inimigo T;
+struct enemy{
     int vidas;
 };
+struct enemy O;
 
 #ifdef _WIN32
     #define CLEAR system("cls");
@@ -85,11 +85,15 @@ void welcome(){//Da as boas-vindas ao player.
         scanf("%d",&n);
     }
 }
-void modificarTamanho(int valor1, int valor2){
+void modificarTamanho(int height, int width){
     FILE *fp;
     fp = fopen("size.txt","w");
-    fprintf(fp,"%d\n",valor2);
-    fprintf(fp,"%d",valor1);
+    if(fp == NULL){
+        printf("Problema ao abrir arquivo size.txt");
+        exit(0);
+    }
+    fprintf(fp,"%d\n",height);
+    fprintf(fp,"%d",width);
     fclose(fp);
 }
 void modificarProb(int valor1, int valor2, int valor3, int valor4){
@@ -101,87 +105,200 @@ void modificarProb(int valor1, int valor2, int valor3, int valor4){
     fprintf(fp,"%d",valor4);//T
     fclose(fp);
 }
-void modificarVelocidade(int valor1){
+void modificarVelocidade(int speed){
     FILE *fp;
     fp = fopen("velocidade.txt","w");
-    fprintf(fp,"%d",valor1);
+    fprintf(fp,"%d",speed);
     fclose(fp);
+}
+void modificarVida(int vidaO){
+    FILE *fp;
+    fp = fopen("vidaO.txt","w");
+    fprintf(fp,"%d",vidaO);
+    fclose(fp);
+}
+void modificarMunicao(int municaoT){
+    FILE *fp;
+    fp = fopen("municao.txt","w");
+    fprintf(fp,"%d",municaoT);
+    fclose(fp);
+}
+void leituraDosArquivos(){
+    FILE *config;
+    config = fopen("size.txt","r");
+    if(config == NULL){
+        printf("\nArquivo nao existente/Problema na abertura\n");
+        exit(0);
+    }
+    fscanf(config,"%d %d",&altura,&largura);
+    fclose(config);
+    
+
+    config = fopen("prob.txt","r");
+    if(config == NULL){
+        printf("\nArquivo nao existente/Problema na abertura\n");
+        exit(0);
+    }
+    fscanf(config,"%d %d %d %d", &probX, &probF, &probO, &probT);
+    fclose(config);
+
+
+    config = fopen("velocidade.txt","r");
+    if(config == NULL){
+        printf("\nArquivo nao existente/Problema na abertura\n");
+        exit(0);
+    }
+    fscanf(config,"%d",&velocidade);
+    fclose(config);
+
+    config = fopen("vidaO.txt","r");
+    if(config == NULL){
+        printf("\nArquivo nao existente/Problema na abertura\n");
+        exit(0);
+    }
+    fscanf(config,"%d",&O.vidas);
+    fclose(config);
+
+    config = fopen("municao.txt","r");
+    if(config == NULL){
+        printf("\nArquivo nao existente/Problema na abertura\n");
+        exit(0);
+    }
+    fscanf(config,"%d",&T.municao);
+    fclose(config);
+}
+void configurarMapa(){
+    int escolheu, height, width, speed;
+    CLEAR;
+    printf("Main Menu > Configuracoes > Tabuleiro\n");
+    printf("1 - Tamanho.\n");
+    printf("2 - Velocidade.\n");
+    printf("3 - Voltar.\n");
+    printf("Digite a opcao desejada.\n");
+    scanf("%d",&escolheu);
+    while(escolheu != 3){
+        if(escolheu != 1 && escolheu != 2){
+            printf("Opcao invalida, escolha a opcao desejada");
+            scanf("%d",&escolheu);
+        }
+        if(escolheu == 1){
+            printf("Voce escolheu alterar o tamanho do mapa, digite a altura e a largura desejadas, separadas por espaco.\n");
+            printf("A altura minima eh 3 e a maxima eh 10, ja a largura minima eh 3 e a largura maxima eh 135.\n");
+            printf("O tamanho atual eh %dx%d.\n",altura,largura);
+            scanf("%d %d", &height, &width);
+            while(height < 3 || height > 10 || width < 3 || width > 135){
+                printf("Dimensoes invalidas, digite novamente.\n");
+                scanf("%d %d", &height, &width);
+            }
+            modificarTamanho(height,width);
+            leituraDosArquivos();
+            printf("Valores modificados, tamanho atual: %dx%d.\n",altura,largura);
+            printf("Escolha a opcao desejada.\n");
+        }
+        else if(escolheu == 2){
+            printf("Voce escolheu alterar a velocidade do jogo, digite o tempo de espera a cada iteracao(em microssegundos).\n");
+            printf("O tempo deve ser maior que 0 mas nao possui limite.\n");
+            printf("O tempo padrao eh 60000, valores muito maiores ou muito menores podem prejudicar a jogabilidade.\n");
+            printf("Tempo atual: %d\n",velocidade);
+            scanf("%d",&speed);
+            while(speed<=0){
+                printf("Velocidade invalida, digite novamente.\n");
+                scanf("%d",&speed);
+            }
+            modificarVelocidade(speed);
+            leituraDosArquivos();
+            printf("Valor modificado, velocidade atual: %d \n",velocidade);
+            printf("Escolha a opcao desejada.\n");
+        }
+        scanf("%d",&escolheu);
+    }
+}
+void configurarNPCs(){
+    int escolheu, chanceX, chanceF, chanceO, chanceT, vidaO, municaoT;
+    CLEAR;
+    printf("Main Menu > Configuracoes > NPCs\n");
+    printf("1 - Probabilidades.\n");
+    printf("2 - Vida do O.\n");
+    printf("3 - Municao do T.\n");
+    printf("4 - Voltar.\n");
+    printf("Digite a opcao desejada.\n");
+    scanf("%d",&escolheu);
+    while(escolheu != 4){
+        if(escolheu != 1 && escolheu != 2 && escolheu != 3){
+            printf("Opcao invalida, digite uma opcao valida.\n");
+            scanf("%d",&escolheu);
+        }
+        if(escolheu == 1){
+            printf("Voce escolheu alterar as probabilidades de surgimento dos NPCs.\n");
+            printf("Digite as quatro probabilidades(X, F, O, T) nessa ordem, todas variando de 0 a 100.\n");
+            printf("Probabilidades atuais: X(%d), F(%d), O(%d), T(%d)\n",probX, probF, probO, probT);
+            scanf("%d %d %d %d",&chanceX, &chanceF, &chanceO, &chanceT);
+            while(chanceX < 0 || chanceX > 100 || chanceF < 0 || chanceF > 100 || chanceO < 0 || chanceO > 100 || chanceT < 0 || chanceT > 100){
+                printf("Valores invalidos, todos devem estar entre 0 e 100, digite novamente.\n");
+                scanf("%d %d %d %d",&chanceX, &chanceF, &chanceO, &chanceT);
+            }
+            modificarProb(chanceX, chanceF, chanceO, chanceT);
+            leituraDosArquivos();
+            printf("Valores modificados, probabilidades atuais: X(%d), F(%d), O(%d), T(%d).\n",probX, probF, probO, probT);
+            printf("Escolha a opcao desejada.\n");
+        }
+        else if(escolheu == 2){
+            printf("Voce escolheu alterar a vida do O.\n");
+            printf("Digite a quantidade de vidas desejadas para os inimigos tipo O, com um minimo de 1.\n");
+            printf("Vidas atuais: %d\n",O.vidas);
+            scanf("%d",&vidaO);
+            while(vidaO < 1){
+                printf("Valor invalido, a quantidade de vidas deve ser maior que 1, digite novamente.\n");
+                scanf("%d",&vidaO);
+            }
+            modificarVida(vidaO);
+            leituraDosArquivos();
+            printf("Valores modificados, vida atual: %d\n",O.vidas);
+            printf("Escolha a opcao desejada.\n");
+        }
+        else if(escolheu == 3){
+            printf("Voce escolheu alterar a municao do T.\n");
+            printf("Digite a quantidade de projeteis dos inimigos tipo T, nao serao aceitos valores negativos.\n");
+            printf("Municao atual: %d\n",T.municao);
+            scanf("%d",&municaoT);
+            while(municaoT<0){
+                printf("Valor invalido, digite um valor maior ou igual a 0.\n");
+                scanf("%d",&municaoT);
+            }
+            modificarMunicao(municaoT);
+            leituraDosArquivos();
+            printf("Valores modificados, municao atual: %d\n",T.municao);
+            printf("Escolha a opcao desejada.\n");
+        }
+        scanf("%d",&escolheu);
+    }
+}
+void configuracoes(){
+    int escolheu = 0;
+    while(escolheu != 4){
+        CLEAR;
+        printf("Main Menu > Configuracoes\n");
+        printf("1 - Tabuleiro.\n");
+        printf("2 - NPCs.\n");
+        printf("3 - Ativar Modo Ranqueado.\n");
+        printf("4 - Voltar.\n");
+        printf("Digite a opcao desejada.\n");
+        scanf("%d",&escolheu);
+        if(escolheu != 1 && escolheu != 2 && escolheu != 3 && escolheu != 4){
+            printf("Opcao invalida, escolha a opcao desejada\n");
+            scanf("%d",&escolheu);
+        }
+        if(escolheu == 1)
+            configurarMapa();
+        else if(escolheu == 2)
+            configurarNPCs();
+    }
 }
 void opcao(int escolheu){//Funcao utilizada pela funcao menu, no momento so funciona para instrucoes. Colocada antes no codigo para evitar Warnings no terminal, ja que se ela for chamada por uma funcao antes de ser declarada ele reclama com "Implicit Declaration".
     int jogar=0, valor1, valor2, valor3, valor4;
     switch (escolheu){
         case 2 :
-            CLEAR;
-            printf("Configuracoes:\n");
-            printf("Para modificar algum valor digite o numero correspondente e o valor desejado separados por espaco.\n");
-            printf("Quando terminar de configurar, digite -1 para sair do menu e jogar.\n");
-            printf("1 - Largura(Maximo de 135) e Altura(Maximo de 10).Digite a altura e a largura nessa ordem.\n");
-            printf("2 - Chances de X, F, O e T(Valores entre 0 e 100).\n");
-            printf("3 - Velocidade(Tempo de espera a cada frame em microssegundos, o valor padrao eh de 60000).\n");
-            printf("4 - Vida do O(Nao possui limite mas o padrao eh 10, valores muito acima disso podem atrapalhar a jogabilidade).\n");
-            printf("5 - Municao do T(Nao possui limite mas o padrao eh 5, valores muito acima disso podem atrapalhar a jogabilidade).\n");
-            while(jogar != -1){//Condicao de saida do menu
-                scanf("%d",&jogar);
-                while(jogar != 1 && jogar != 2 && jogar != 3 && jogar != 4 && jogar != 5 && jogar != -1){
-                    printf("Opcao invalida, digite uma opcao valida.\n");
-                    scanf("%d",&jogar);
-                }
-                switch(jogar){
-                    case 1 :
-                        printf("Tamanho atual: %dx%d\n",altura,largura);
-                        printf("Voce escolheu alterar o tamanho do mapa, digite a altura e a largura desejadas, separadas por espaco.\n");
-                        scanf("%d %d",&valor2, &valor1);
-                        while(valor1 > 135 || valor1 <= 2){
-                            printf("Valor invalido, a largura deve ser menor ou igual a 135 e maior que 2. Digite dois valores validos.\n");
-                            scanf("%d %d",&valor2, &valor1);
-                        }
-                        while(valor2 > 10 || valor2 <= 2){
-                            printf("Valor invalido, a altura deve ser menor ou igual a 10 e maior que 2. Digite dois valores validos.\n");
-                            scanf("%d %d",&valor2, &valor1);
-                        }
-                        modificarTamanho(valor1,valor2);
-                        printf("Tamanho atual: %dx%d\n",valor2,valor1);
-                        printf("Valores modificados, escolha o numero correspondente ao que deseja alterar, ou digite -1 para jogar.\n");
-                        break;
-                    case 2 :
-                        printf("Probabilidades atuais: X(%d), F(%d), O(%d), T(%d)\n",probX, probF, probO, probT);
-                        printf("Voce escolheu alterar a chance de nascer inimigos, digite quais as chances desejadas nesta ordem: X, F, O, T separadas por espaco.\n");
-                        scanf("%d %d %d %d",&valor1, &valor2, &valor3, &valor4);
-                        while(valor1>100 || valor1<0){
-                            printf("Valor invalido de X, digite um valor entre 0 e 100.\n");
-                            scanf("%d",&valor1);
-                        }
-                        while(valor2>100 || valor2<0){
-                            printf("Valor invalido de F, digite um valor entre 0 e 100.\n");
-                            scanf("%d",&valor2);
-                        }
-                        while(valor3>100 || valor3<0){
-                            printf("Valor invalido de O, digite um valor entre 0 e 100.\n");
-                            scanf("%d",&valor3);
-                        }
-                        while(valor4>100 || valor4<0){
-                            printf("Valor invalido de T, digite um valor entre 0 e 100.\n");
-                            scanf("%d",&valor4);
-                        }
-                        modificarProb(valor1,valor2,valor3,valor4);
-                        printf("Probabilidades atuais: X(%d), F(%d), O(%d), T(%d)\n",valor1, valor2, valor3, valor4);
-                        printf("Valores modificados, escolha o numero correspondente ao que deseja alterar, ou digite -1 para jogar.\n");
-                        break;
-                    case 3 :
-                        printf("Velocidade atual: %d\n",velocidade);
-                        printf("Voce escolheu alterar a velocidade do jogo, digite qual o tempo de espera desejado para cada iteracao.\n");
-                        printf("Atencao, eh recomendado que o valor fique proximo de 60000, valores muito altos ou muito baixos podem atrapalhar a jogabilidade.\n");
-                        scanf("%d",&valor1);
-                        while(valor1<0){
-                            printf("Valor invalido, o tempo de espera deve ser maior que 0, digite um valor valido.\n");
-                            scanf("%d",&valor1);
-                        }
-                        modificarVelocidade(valor1);
-                        printf("Velocidade atual: %d\n",valor1);
-                        printf("Valores modificados, escolha o numero correspondente ao que deseja alterar, ou digite -1 para jogar.\n");
-                        break;
-                }
-            }
+            configuracoes();
             break;
         case 3 ://Implementar depois
             break;
@@ -209,20 +326,23 @@ void opcao(int escolheu){//Funcao utilizada pela funcao menu, no momento so func
     }
 }
 void menu(){//Basicamente da as opcoes, chamando a devida funcao, recusando comandos invalidos e limpando a tela
-    int escolha;
-    printf("1 - Jogar\n");
-    printf("2 - Configuracoes\n");
-    printf("3 - Ranking\n");
-    printf("4 - Instrucoes\n");
-    printf("5 - Sair\n\n");
-    printf("Escolha uma opcao: ");
-    scanf("%d",&escolha);
-    while(escolha != 1 && escolha != 2 && escolha != 3 && escolha != 4 && escolha != 5){
-        printf("Opcao invalida, digite uma opcao valida.\n");
-        scanf("%d",&escolha);
-        printf("\n");
-    }
-    switch (escolha){
+    int escolheu;
+    while(escolheu != 1){
+        CLEAR;
+        printf("Main Menu\n");
+        printf("1 - Jogar\n");
+        printf("2 - Configuracoes\n");
+        printf("3 - Ranking\n");
+        printf("4 - Instrucoes\n");
+        printf("5 - Sair\n\n");
+        printf("Escolha uma opcao: ");
+        scanf("%d",&escolheu);
+        while(escolheu != 1 && escolheu != 2 && escolheu != 3 && escolheu != 4 && escolheu != 5){
+            printf("Opcao invalida, digite uma opcao valida.\n");
+            scanf("%d",&escolheu);
+            printf("\n");
+        }
+        switch (escolheu){
             case 1 :
                 CLEAR;
                 break;
@@ -238,6 +358,7 @@ void menu(){//Basicamente da as opcoes, chamando a devida funcao, recusando coma
             case 5 :
                 exit(0);
         }
+    }
 }
 void map(){//define o mapa e as bordas
     int i;
@@ -425,34 +546,6 @@ void jogo(){//Realiza o jogo de fato
         scanf("%d",&vicio);
     }
     CLEAR;
-}
-int leituraDosArquivos(){
-    FILE *config;
-    config = fopen("size.txt","r");
-    if(config == NULL){
-        printf("\nArquivo nao existente/Problema na abertura\n");
-        exit;
-    }
-    fscanf(config,"%d %d",&altura,&largura);
-    fclose(config);
-    
-
-    config = fopen("prob.txt","r");
-    if(config == NULL){
-        printf("\nArquivo nao existente/Problema na abertura\n");
-        exit;
-    }
-    fscanf(config,"%d %d %d %d", &probX, &probF, &probO, &probT);
-    fclose(config);
-
-
-    config = fopen("velocidade.txt","r");
-    if(config == NULL){
-        printf("\nArquivo nao existente/Problema na abertura\n");
-        exit;
-    }
-    fscanf(config,"%d",&velocidade);
-    fclose(config);
 }
 int main(){
     while(vicio == 1){
