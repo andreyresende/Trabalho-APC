@@ -27,14 +27,20 @@ int combustivel = 400;
 int pontuacao = 1;
 int colisao = 0;
 int vicio = 1;//Serve para, ao final de cada jogo, verificar se o usuario deseja jogar novamente
+int vidas;//Vida dos inimigos tipo O
+int contador = 0;//Conta a quantidade de inimigos tipo O ativos no mapa
 struct inimigo{
     int municao;
+    int x;
+    int y;
 };
-struct inimigo T;
+struct inimigo T[1000];
 struct enemy{
-    int vidas;
+    int hp;
+    int vertical;
+    int horizontal;
 };
-struct enemy O;
+struct enemy O[1000];
 
 #ifdef _WIN32
     #define CLEAR system("cls");
@@ -156,7 +162,7 @@ void leituraDosArquivos(){
         printf("\nArquivo nao existente/Problema na abertura\n");
         exit(0);
     }
-    fscanf(config,"%d",&O.vidas);
+    fscanf(config,"%d",&vidas);
     fclose(config);
 
     config = fopen("municao.txt","r");
@@ -375,27 +381,39 @@ void map(){//define o mapa e as bordas
     }
 }
 void spawn(){
+    int random;
     if((rand()%100)<probX){//Chance de inimigo X
         tabuleiro[rand()%altura][largura-1] = 'X';
     }
-    else if((rand()%100)<probF){//Chance de combustivel
+    if((rand()%100)<probF){//Chance de combustivel
         tabuleiro[rand()%altura][largura-1] = 'F';
+    }
+    if((rand()%100)<probO){//Chance de inimigo O
+        random = rand()%altura;//Posicao vertical em que o inimigo surgira
+        tabuleiro[random][largura-1] = 'O';
+        O[contador].hp = vidas;//inicializa a vida de acordo com a configuracao
+        O[contador].horizontal = largura-1;//Inicializa a posicao na coluna mais a direita
+        O[contador].vertical = random; //Inicializa a posicao na linha aleatoria escolhida
+        contador++;
+    }
+    if((rand()%100)<probT){//Chance de inimigo T
+        tabuleiro[rand()%altura][largura-1] = 'T';
     }
 }
 void colidiu(){//Procura o personagem e verifica se houve uma colisao
     int i=0;
-    if(tabuleiro[0][0] == '+' && (tabuleiro[0][1]=='X' || tabuleiro[0][1]=='F')){
+    if(tabuleiro[0][0] == '+' && (tabuleiro[0][1]=='X' || tabuleiro[0][1]=='F' || tabuleiro[0][1] == 'T' || tabuleiro[0][1] == '<')){
         if(tabuleiro[0][1]=='F'){
             combustivel += 40;
             tabuleiro[0][1] = ' ';
         }
-        else{
+        else if(tabuleiro[0][1] == 'X' || tabuleiro[0][1] == 'T' || tabuleiro[0][1] == '<'){
             colisao++;
         }
     }
     while(tabuleiro[i][0] != '+'){
         if(tabuleiro[i+1][0] == '+'){
-            if(tabuleiro[i+1][1] == 'X'){
+            if(tabuleiro[i+1][1] == 'X' || tabuleiro[i+1][1] == 'T' || tabuleiro[i+1][1] == '<'){
                 colisao++;
             }
             else if(tabuleiro[i+1][1] == 'F'){
@@ -411,7 +429,7 @@ void moverTiro(){//Move o tiro, eh chamada a cada frame pela funcao jogo
     for(i=0;i<altura;i++){
         for(j=largura-1;j>0;j--){//Procura o tiro
             if(tabuleiro[i][j] == '>'){//Quando acha
-                if((tabuleiro[i][j+1]=='F') || (tabuleiro[i][j+1]=='X')){//se tiver alguma coisa na frente zera ambos
+                if((tabuleiro[i][j+1]=='F') || (tabuleiro[i][j+1]=='X') || (tabuleiro[i][j+1]=='T') || (tabuleiro[i][j+1]=='<') || (tabuleiro[i][j+1]=='O')){//se tiver alguma coisa na frente zera ambos
                     if(tabuleiro[i][j+1]=='X'){
                         pontuacao+=50;
                     }
@@ -430,7 +448,7 @@ void arraste(){//Arrasta a matriz para a esquerda
     int i, j;
     for(i=0;i<altura;i++){
         for(j=0;j<largura;j++){
-            if((tabuleiro[i][j]=='X' || tabuleiro[i][j]=='F') && tabuleiro[i][j-1] != '+'){
+            if((tabuleiro[i][j]=='X' || tabuleiro[i][j]=='F' || tabuleiro[i][j]=='T' || tabuleiro[i][j]=='O') && tabuleiro[i][j-1] != '+'){
                 if(tabuleiro[i][j-1]=='>'){
                     tabuleiro[i][j]=' ';
                     tabuleiro[i][j-1]=' ';
@@ -461,7 +479,7 @@ void show(){//printa o mapa na tela, e chamada a cada loop, depois da arraste.
     }
     printf("\n");
 }
-void queTiroFoiEsse(){//Cria os tiros =D, e chamada no final da funcao moverPersonagem.
+void queTiroFoiEsse(){//Cria os tiros do personagem =D, eh chamada no final da funcao moverPersonagem.
     int i=0;
     if(tabuleiro[0][0] == '+'){//Caso especial para a primeira linha, pois se deixasse apenas o loop ele nao seria executado 
         if(tabuleiro[0][1]=='X' || tabuleiro[0][1]=='F'){//Caso especifico quando o inimigo esta na casa imediatamente a direita do personagem
@@ -482,6 +500,9 @@ void queTiroFoiEsse(){//Cria os tiros =D, e chamada no final da funcao moverPers
         }
     }
     combustivel -= 2;//Note que o tiro retira 3 unidades de combustivel, pois a funcao jogo ja tira 1 a cada 'frame'.
+}
+void tiroInimigo(){//Cria os tiros dos inimigos tipo T
+
 }
 void moverPersonagem(){//Move o personagem. Identifica quando uma tecla e pressionada e qual, depois procura o + e move.
     int i=0;
