@@ -38,8 +38,8 @@ struct inimigo{
 struct inimigo T[1000];
 struct enemy{
     int hp;
-    int vertical;
-    int horizontal;
+    int y;
+    int x;
 };
 struct enemy O[1000];
 
@@ -381,7 +381,7 @@ void map(){//define o mapa e as bordas
         }
     }
 }
-void spawn(){
+void spawn(){//Cuida do surgimento dos NPCs
     int random;
     if((rand()%100)<probX){//Chance de inimigo X
         tabuleiro[rand()%altura][largura-1] = 'X';
@@ -393,8 +393,8 @@ void spawn(){
         random = rand()%altura;//Posicao vertical em que o inimigo surgira
         tabuleiro[random][largura-1] = 'O';
         O[contador].hp = vidas;//inicializa a vida de acordo com a configuracao
-        O[contador].horizontal = largura-1;//Inicializa a posicao na coluna mais a direita
-        O[contador].vertical = random; //Inicializa a posicao na linha aleatoria escolhida
+        O[contador].x = largura-1;//Inicializa a posicao na coluna mais a direita
+        O[contador].y = random; //Inicializa a posicao na linha aleatoria escolhida
         contador++;
     }
     if((rand()%100)<probT){//Chance de inimigo T
@@ -426,16 +426,36 @@ void colidiu(){//Procura o personagem e verifica se houve uma colisao
     }
 }
 void moverTiro(){//Move o tiro, eh chamada a cada frame pela funcao jogo
-    int i, j;
+    int i, j, k;
     for(i=0;i<altura;i++){
         for(j=largura-1;j>0;j--){//Procura o tiro
             if(tabuleiro[i][j] == '>'){//Quando acha
                 if((tabuleiro[i][j+1]=='F') || (tabuleiro[i][j+1]=='X') || (tabuleiro[i][j+1]=='T') || (tabuleiro[i][j+1]=='<') || (tabuleiro[i][j+1]=='O')){//se tiver alguma coisa na frente zera ambos
-                    if(tabuleiro[i][j+1]=='X'){
-                        pontuacao+=50;
+                    if(tabuleiro[i][j+1] == 'O'){//A menos que seja um O
+                        if(O[0].x == j+1){
+                            O[0].hp--;
+                            tabuleiro[i][j] = ' ';
+                            if(O[0].hp == 0)
+                                tabuleiro[i][j+1] = ' ';
+                        }
+                        else{
+                            for(k=0;O[k].x != j+1;k++){//Procura(utilizando a posicao como identificador) qual eh aquele O
+                                if(O[k].x == j+1){//Quando acha
+                                    O[k].hp--;//Diminui o hp
+                                    if(O[k].hp == 0){//Se zerar
+                                        tabuleiro[i][j+1] = ' ';//Some o O
+                                    }
+                                }
+                            }
+                        }
                     }
-                    tabuleiro[i][j+1]=' ';
-                    tabuleiro[i][j]=' ';
+                    else{
+                        if(tabuleiro[i][j+1]=='X'){
+                            pontuacao+=50;
+                        }
+                        tabuleiro[i][j+1]=' ';
+                        tabuleiro[i][j]=' ';
+                    }
                 }
                 else{//senao, o tiro continua
                     tabuleiro[i][j+1]='>';
@@ -446,11 +466,32 @@ void moverTiro(){//Move o tiro, eh chamada a cada frame pela funcao jogo
     }
 }
 void arraste(){//Arrasta a matriz para a esquerda
-    int i, j;
+    int i, j, k, identificador;
     for(i=0;i<altura;i++){
         for(j=0;j<largura;j++){
             if((tabuleiro[i][j]=='X' || tabuleiro[i][j]=='F' || tabuleiro[i][j]=='T' || tabuleiro[i][j]=='O') && tabuleiro[i][j-1] != '+'){
-                if(tabuleiro[i][j-1]=='>'){
+                if(tabuleiro[i][j] == 'O' && tabuleiro[i][j-1] == '>'){//Caso o tiro colida com um O
+                    if(O[0].x == j){
+                        O[0].hp--;
+                        tabuleiro[i][j-1] = 'O';
+                        tabuleiro[i][j] = ' ';
+                        if(O[0].hp == 0)
+                            tabuleiro[i][j-1] = ' ';
+                    }
+                    else{
+                        for(k=0;O[k].x != j;k++){//Procura(utilizando a posicao como identificador) qual eh aquele O
+                            if(O[k].x == j){//Quando acha
+                                O[k].hp--;//Diminui o hp
+                                tabuleiro[i][j-1] = 'O';
+                                tabuleiro[i][j] = ' ';
+                                if(O[k].hp == 0){//Se zerar
+                                    tabuleiro[i][j-1] = ' ';//Some o O
+                                }
+                            }
+                        }
+                    }
+                }
+                else if(tabuleiro[i][j-1]=='>'){
                     tabuleiro[i][j]=' ';
                     tabuleiro[i][j-1]=' ';
                 }
@@ -459,6 +500,11 @@ void arraste(){//Arrasta a matriz para a esquerda
                     tabuleiro[i][j]=' ';
                 }
             }
+        }
+    }
+    if(contador>0){
+        for(identificador=0;identificador<contador;identificador++){
+            O[identificador].x--;
         }
     }
 }
@@ -479,6 +525,8 @@ void show(){//printa o mapa na tela, e chamada a cada loop, depois da arraste.
         printf("%c",borda[0][i]);
     }
     printf("\n");
+    if(contador>1)
+        printf("\nVida do segundo O = %d\n",O[1].hp);
 }
 void queTiroFoiEsse(){//Cria os tiros do personagem =D, eh chamada no final da funcao moverPersonagem.
     int i=0;

@@ -17,7 +17,14 @@ Descricao: O jogo acontece na ordem definida pela funcao jogo, que e chamada pel
 #include <fcntl.h>
 
 #define RAND () ((rand()%100 + 1))
-
+typedef struct{
+    char caractere;
+    int x;
+    int y;
+    int municao;
+    int hp;
+}Registro[10][135];
+Registro mapa;
 int altura, largura;
 char tabuleiro[10][135];//Basicamente esse eh o tamanho maximo da matriz que o jogador pode colocar
 char borda[1][135];
@@ -368,12 +375,23 @@ void menu(){//Basicamente da as opcoes, chamando a devida funcao, recusando coma
     }
 }
 void map(){//define o mapa e as bordas
-    int i;
+    int i, j;
     for(i=0;i<altura;i++){
-        for(int j=0;j<largura;j++){
+        for(j=0;j<largura;j++){
             tabuleiro[i][j] = ' ';
             if(i==(altura/2) && j==0 ){
                 tabuleiro[i][j] = '+';
+            }
+            if(i==0){
+                borda[i][j] = '#';
+            }
+        }
+    }
+    for(i=0;i<altura;i++){
+        for(j=0;j<largura;j++){
+            mapa[i][j].caractere = ' ';
+            if(i==(altura/2) && j==0 ){
+                mapa[i][j].caractere = '+';
             }
             if(i==0){
                 borda[i][j] = '#';
@@ -427,10 +445,27 @@ void colidiu(){//Procura o personagem e verifica se houve uma colisao
 }
 void moverTiro(){//Move o tiro, eh chamada a cada frame pela funcao jogo
     int i, j;
-    for(i=0;i<altura;i++){
+    /* for(i=0;i<altura;i++){
         for(j=largura-1;j>0;j--){//Procura o tiro
             if(tabuleiro[i][j] == '>'){//Quando acha
                 if((tabuleiro[i][j+1]=='F') || (tabuleiro[i][j+1]=='X') || (tabuleiro[i][j+1]=='T') || (tabuleiro[i][j+1]=='<') || (tabuleiro[i][j+1]=='O')){//se tiver alguma coisa na frente zera ambos
+                    if(tabuleiro[i][j+1]=='X'){
+                        pontuacao+=50;
+                    }
+                    tabuleiro[i][j+1]=' ';
+                    tabuleiro[i][j]=' ';
+                }
+                else{//senao, o tiro continua
+                    tabuleiro[i][j+1]='>';
+                    tabuleiro[i][j]=' ';
+                }
+            }
+        }
+    } */
+    for(i=0;i<altura;i++){
+        for(j=largura-1;j>0;j--){//Procura o tiro
+            if(mapa[i][j].caractere == '>'){//Quando acha
+                if((mapa[i][j+1].caractere=='F') || (mapa[i][j+1].caractere=='X') || (mapa[i][j+1].caractere=='T') || (mapa[i][j+1].caractere=='<') || (mapa[i][j+1].caractere=='O')){//se tiver alguma coisa na frente zera ambos
                     if(tabuleiro[i][j+1]=='X'){
                         pontuacao+=50;
                     }
@@ -447,7 +482,7 @@ void moverTiro(){//Move o tiro, eh chamada a cada frame pela funcao jogo
 }
 void arraste(){//Arrasta a matriz para a esquerda
     int i, j;
-    for(i=0;i<altura;i++){
+    /* for(i=0;i<altura;i++){
         for(j=0;j<largura;j++){
             if((tabuleiro[i][j]=='X' || tabuleiro[i][j]=='F' || tabuleiro[i][j]=='T' || tabuleiro[i][j]=='O') && tabuleiro[i][j-1] != '+'){
                 if(tabuleiro[i][j-1]=='>'){
@@ -460,6 +495,20 @@ void arraste(){//Arrasta a matriz para a esquerda
                 }
             }
         }
+    } */
+    for(i=0;i<altura;i++){
+        for(j=0;j<largura;j++){
+            if((mapa[i][j].caractere=='X' || mapa[i][j].caractere=='F' || mapa[i][j].caractere=='T' || mapa[i][j].caractere=='O') && mapa[i][j-1].caractere != '+'){
+                if(mapa[i][j-1].caractere=='>'){
+                    mapa[i][j].caractere=' ';
+                    mapa[i][j-1].caractere=' ';
+                }
+                else{
+                    mapa[i][j-1].caractere=mapa[i][j].caractere;
+                    mapa[i][j].caractere=' ';
+                }
+            }
+        }
     }
 }
 void show(){//printa o mapa na tela, e chamada a cada loop, depois da arraste.
@@ -469,9 +518,15 @@ void show(){//printa o mapa na tela, e chamada a cada loop, depois da arraste.
         printf("%c",borda[0][i]);
     }
     printf("\n");
-    for(i=0;i<altura;i++){
+    /* for(i=0;i<altura;i++){
         for(j=0;j<largura;j++){
             printf("%c",tabuleiro[i][j]);
+        }
+        printf("\n");
+    } */
+    for(i=0;i<altura;i++){
+        for(j=0;j<largura;j++){
+            printf("%c",mapa[i][j].caractere);
         }
         printf("\n");
     }
