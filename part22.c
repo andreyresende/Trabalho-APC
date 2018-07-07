@@ -15,11 +15,12 @@ Descricao: O jogo acontece na ordem definida pela funcao jogo, que e chamada pel
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <string.h>
 
 #define RAND () ((rand()%100 + 1))
 
 int altura, largura;
-char tabuleiro[10][135];//Basicamente esse eh o tamanho maximo da matriz que o jogador pode colocar
+char tabuleiro[10][136];//Basicamente esse eh o tamanho maximo da matriz que o jogador pode colocar
 char borda[1][135];
 int probX, probF, probO, probT;
 int velocidade;
@@ -30,20 +31,25 @@ int vicio = 1;//Serve para, ao final de cada jogo, verificar se o usuario deseja
 int vidas;//Vida dos inimigos tipo O
 int contador = 0;//Conta a quantidade de inimigos tipo O 
 int contador2 = 0;//Conta a quantidade de inimigos tipo T
-int ammo;
+int ammo;//Municao dos inimigos tipo T
+int rank = 0;//Ativa/Desativa o modo ranqueado
 struct inimigo{
     int municao;
     int x;
     int y;
 };
-struct inimigo T[1000];
+struct inimigo T[10000];
 struct enemy{
     int hp;
     int y;
     int x;
 };
-struct enemy O[1000];
-
+struct enemy O[10000];
+typedef struct{
+    char nome[10];
+    int pontuacao;
+}jogadores;
+jogadores melhores[10];
 #ifdef _WIN32
     #define CLEAR system("cls");
 #else
@@ -300,7 +306,53 @@ void configuracoes(){
             configurarMapa();
         else if(escolheu == 2)
             configurarNPCs();
+        else if(escolheu == 3)
+            rank++;
+            break;
     }
+}
+void instrucoes(){
+    int voltar;
+    CLEAR;
+    printf("Instrucoes:\n");
+    printf(" Personagens:\n");
+    printf("  + - Representa a sua nave.\n");
+    printf("  X - Inimigos simples, se toca-lo voce morre. Destrui-lo com um tiro concede 50 pontos.\n");
+    printf("  F - Combustivel, toque para receber 40 unidades de combustivel.\n");
+    printf("  O - Inimigo util, nao eh perigoso, mas precisa de varios tiros para morrer, a quantidade pode ser alterada nas configuracoes. Ao morrer leva consigo      todos os X do mapa, dando 10 pontos para cada.\n");
+    printf("  T - Inimigo atirador, tanto o seu toque quanto de seu tiro sao fatais, pode ser destruido, apesar de nao concede pontos.\n");
+    printf(" Comandos:\n");
+    printf("  w - Move o personagem para cima e gasta 2 de combustivel.\n");
+    printf("  s - Move o personagem para baixo e gasta 2 de combustivel.\n");
+    printf("  d - Atira e gasta 3 de combustivel.\n");
+    printf("ATENCAO: Apertar alguma tecla que nao corresponda a um comando subtrai 2 de combustivel.\n");
+    printf("Pressione enter para voltar.\n");
+    getchar();
+    getchar();
+}
+void ranking(){
+    int i;
+    FILE *fp;
+    fp = fopen("ranking.bin","rb");
+    for(i=0;i<10;i++){
+        fread(&melhores[i],sizeof(jogadores),1,fp);
+    }
+    fclose(fp);
+    CLEAR;
+    printf("Ranking:\n");
+    printf("1 - %s  %d\n",melhores[0].nome,melhores[0].pontuacao);
+    printf("2 - %s  %d\n",melhores[1].nome,melhores[1].pontuacao);
+    printf("3 - %s  %d\n",melhores[2].nome,melhores[2].pontuacao);
+    printf("4 - %s  %d\n",melhores[3].nome,melhores[3].pontuacao);
+    printf("5 - %s  %d\n",melhores[4].nome,melhores[4].pontuacao);
+    printf("6 - %s  %d\n",melhores[5].nome,melhores[5].pontuacao);
+    printf("7 - %s  %d\n",melhores[6].nome,melhores[6].pontuacao);
+    printf("8 - %s  %d\n",melhores[7].nome,melhores[7].pontuacao);
+    printf("9 - %s  %d\n",melhores[8].nome,melhores[8].pontuacao);
+    printf("10 - %s  %d\n",melhores[9].nome,melhores[9].pontuacao);
+    printf("Pressione enter para voltar\n");
+    getchar();
+    getchar();
 }
 void opcao(int escolheu){//Funcao utilizada pela funcao menu, no momento so funciona para instrucoes. Colocada antes no codigo para evitar Warnings no terminal, ja que se ela for chamada por uma funcao antes de ser declarada ele reclama com "Implicit Declaration".
     int jogar=0, valor1, valor2, valor3, valor4;
@@ -308,34 +360,17 @@ void opcao(int escolheu){//Funcao utilizada pela funcao menu, no momento so func
         case 2 :
             configuracoes();
             break;
-        case 3 ://Implementar depois
+        case 3 :
+            ranking();
             break;
         case 4 :
-            CLEAR;
-            printf("Comandos:\nw(move o personagem para cima e gasta 2 de combustivel).\ns(move o personagem para baixo e gasta 2 de combustivel).\nd(atira e gasta 3 de combustivel).\n");
-            printf("Voce eh uma nave (+), inimigos(X) virao pela direita, bem como combustivel(F).\nEncostar em um inimigo finaliza o jogo, encostar em um (F) aumenta o seu combustivel em 40 unidades.\n");
-            printf("O seu tiro destroi tanto inimigos quanto combustivel, sendo que ao destruir um inimigo 50 ponto sao ganhos, entretanto, destruir um combustivel nao lhe proporciona nenhum beneficio.\n");
-            printf("ATENCAO: Apertar alguma tecla que nao seja um comando subtrai 2 de combustivel.\n");
-            printf("Digite 1 para jogar, ou 2 para sair: ");
-            scanf("%d",&jogar);
-            printf("\n");
-            while(jogar != 1 && jogar != 2){
-                printf("Valor invalido, digite 1 para jogar, ou 2 para sair: ");
-                scanf("%d",&jogar);
-                printf("\n");
-            }
-            if(jogar==2){
-                exit(0);
-            }
-            else{
-                CLEAR;
-                break;
-            }
+            instrucoes();
+            break;
     }
 }
 void menu(){//Basicamente da as opcoes, chamando a devida funcao, recusando comandos invalidos e limpando a tela
     int escolheu;
-    while(escolheu != 1){
+    while(escolheu != 1 && rank == 0){
         CLEAR;
         printf("Main Menu\n");
         printf("1 - Jogar\n");
@@ -423,7 +458,7 @@ void colidiu(){//Procura o personagem e verifica se houve uma colisao
     }
     while(tabuleiro[i][0] != '+'){
         if(tabuleiro[i+1][0] == '+'){
-            if(tabuleiro[i+1][1] == 'X' || tabuleiro[i+1][1] == 'T' || tabuleiro[i+1][1] == '<'){
+            if(tabuleiro[i+1][1] == 'X' || tabuleiro[i+1][1] == 'T' || tabuleiro[i+1][1] == '<' || tabuleiro[i+1][2] == '<'){
                 colisao++;
             }
             else if(tabuleiro[i+1][1] == 'F'){
@@ -453,7 +488,7 @@ void moverTiro(){//Move o tiro, eh chamada a cada frame pela funcao jogo
     for(i=0;i<altura;i++){
         for(j=largura-1;j>0;j--){//Procura o tiro
             if(tabuleiro[i][j] == '>'){//Quando acha
-                if((tabuleiro[i][j+1]=='F') || (tabuleiro[i][j+1]=='X') || (tabuleiro[i][j+1]=='T') || (tabuleiro[i][j+1]=='<') || (tabuleiro[i][j+1]=='O')){//se tiver alguma coisa na frente zera ambos
+                if((tabuleiro[i][j+1]=='F') || (tabuleiro[i][j+1]=='X') || (tabuleiro[i][j+1]=='T') || (tabuleiro[i][j+1]=='<') || (tabuleiro[i][j+1]=='O' || (tabuleiro[i][j+1] == ' ' && tabuleiro[i][j+2] == '<'))){//se tiver alguma coisa na frente zera ambos
                     if(tabuleiro[i][j+1] == 'O'){//A menos que seja um O
                         tabuleiro[i][j] = ' ';
                         k = -1;
@@ -472,6 +507,8 @@ void moverTiro(){//Move o tiro, eh chamada a cada frame pela funcao jogo
                         if(tabuleiro[i][j+1]=='X'){
                             pontuacao+=50;
                         }
+                        if(tabuleiro[i][j+1] == ' ' && tabuleiro[i][j+2] == '<')
+                            tabuleiro[i][j+2] = ' ';
                         tabuleiro[i][j+1]=' ';
                         tabuleiro[i][j]=' ';
                     }
@@ -505,11 +542,14 @@ void arraste(){//Arrasta a matriz para a esquerda
                             }
                         }
                     }while(O[k].x != j);
-                    tabuleiro[i][j] = ' ';
                 }
                 else if(tabuleiro[i][j-1]=='>'){
                     tabuleiro[i][j] = ' ';
                     tabuleiro[i][j-1] = ' ';
+                }
+                if(tabuleiro[i][j] == '<' && tabuleiro[i][j-1] == ' ' && tabuleiro[i][j-2] == '>'){
+                    tabuleiro[i][j] = ' ';
+                    tabuleiro[i][j-2] = ' ';    
                 }
                 else{
                     tabuleiro[i][j-1] = tabuleiro[i][j];
@@ -560,9 +600,6 @@ void show(){//printa o mapa na tela, e chamada a cada loop, depois da arraste.
         printf("%c",borda[0][i]);
     }
     printf("\n");
-    if(contador2>0){
-        printf("\n\nMunicao restante do primeiro T = %d\n",T[0].municao);
-    }
 }
 void queTiroFoiEsse(){//Cria os tiros do personagem =D, eh chamada no final da funcao moverPersonagem.
     int i=0;
@@ -590,7 +627,7 @@ void tiroInimigo(){//Cria os tiros dos inimigos tipo T
     int i, j, taxa, k;
     taxa = (((ammo*100)/largura)/100)+1;//Cria uma probabilidade razoavel para que o T atire
     for(i=0;i<altura;i++){
-        for(j=0;j<largura-1;j++){
+        for(j=0;j<largura;j++){
             if(tabuleiro[i][j] == 'T'){
                 k = - 1;
                 do{
@@ -652,36 +689,122 @@ void moverPersonagem(){//Move o personagem. Identifica quando uma tecla e pressi
         }
     }
 }
+void bubbleSort(){
+    int i, j;
+    jogadores aux;
+    for(i=9;i>0;i--){
+        for(j=0;j<i;j++){
+            if(melhores[j].pontuacao < melhores[j+1].pontuacao){
+                aux = melhores[j];
+                melhores[j] = melhores[j+1];
+                melhores[j+1] = aux;
+            }
+        }
+    }
+}
+void atualizarRanking(jogadores novo){//Basicamente le os dados do novo jogador, se for maior que o ultimo o insere no ranking e reordena
+    int i, j;
+    FILE *fp;
+    fp = fopen("ranking.bin","rb");
+    for(i=0;i<10;i++){
+        fread(&melhores[i],sizeof(jogadores),1,fp);
+    }
+    fclose(fp);
+    if(novo.pontuacao>melhores[9].pontuacao)
+        melhores[9] = novo;
+    bubbleSort();
+    fp = fopen("ranking.bin","wb");
+    for(i=0;i<10;i++){
+        fwrite(&melhores[i],sizeof(jogadores),1,fp);
+    }
+    fclose(fp);
+}
 void jogo(){//Realiza o jogo de fato
-    map();//Monta o mapa
-    while(colisao == 0 && combustivel > 0){
+    if(rank == 0){
+        map();//Monta o mapa
+        while(colisao == 0 && combustivel > 0){
+            CLEAR;
+            colidiu();//Eh chamada antes das outras porque a cada frame ele verifica se o proximo char eh um inimigo/F e depois move, assim ele ve se colidiu.
+            tiroInimigo();
+            moverTiro();
+            arraste();
+            moverPersonagem();
+            spawn();
+            show();
+            usleep(velocidade);
+            pontuacao++;
+            combustivel--;
+        }
         CLEAR;
-        colidiu();//Eh chamada antes das outras porque a cada frame ele verifica se o proximo char eh um inimigo/F e depois move, assim ele ve se colidiu.
-        tiroInimigo();
-        moverTiro();
-        arraste();
-        moverPersonagem();
-        spawn();
-        show();
-        usleep(velocidade);
-        pontuacao++;
-        combustivel--;
+        printf("GAME OVER\n");
+        printf("Pontuacao: %d\n",pontuacao );
+        if(colisao>0){
+            printf("Morte por Colisao\n");
+        }
+        if(combustivel <= 0){
+            printf("Sem combustivel\n");
+        }
+        printf("Deseja jogar novamente?\nDigite 0 para sair, ou 1 para jogar: ");
+        vicio = 2;
+        while(vicio != 0 && vicio != 1){
+            scanf("%d",&vicio);
+        }
+        CLEAR;
     }
-    CLEAR;
-    printf("GAME OVER\n");
-    printf("Pontuacao: %d\n",pontuacao );
-    if(colisao>0){
-        printf("Morte por Colisao\n");
+    else{
+        char user[10];
+        jogadores novo;
+        CLEAR;
+        printf("Digite seu username(minimo de 1 caractere, maximo de 10), evite caracteres especiais\n");
+        scanf("%s",novo.nome);
+        while(strlen(novo.nome)<1 || strlen(novo.nome)>10){
+            printf("Tamanho invalido para o username, digite novamente\n");
+            scanf("%s",user);
+        }
+        altura = 10;
+        largura = 135;
+        probX = 25;
+        probF = 10;
+        probO = 1;
+        probT = 4;
+        vidas = 10;
+        ammo = 5;
+        velocidade = 60000;
+        map();//Monta o mapa
+        while(colisao == 0 && combustivel > 0){
+            CLEAR;
+            colidiu();//Eh chamada antes das outras porque a cada frame ele verifica se o proximo char eh um inimigo/F e depois move, assim ele ve se colidiu.
+            tiroInimigo();
+            moverTiro();
+            arraste();
+            moverPersonagem();
+            spawn();
+            show();
+            usleep(velocidade);
+            pontuacao++;
+            combustivel--;
+        }
+        contador = 0;
+        contador2 = 0;
+        CLEAR;
+        printf("GAME OVER\n");
+        printf("Pontuacao: %d\n",pontuacao );
+        novo.pontuacao = pontuacao;
+        if(colisao>0){
+            printf("Morte por Colisao\n");
+        }
+        if(combustivel <= 0){
+            printf("Sem combustivel\n");
+        }
+        rank = 0;
+        printf("Deseja jogar novamente?\nDigite 0 para sair, ou 1 para jogar: ");
+        vicio = 2;
+        while(vicio != 0 && vicio != 1){
+            scanf("%d",&vicio);
+        }
+        CLEAR;
+        atualizarRanking(novo);
     }
-    if(combustivel <= 0){
-        printf("Sem combustivel\n");
-    }
-    printf("Deseja jogar novamente?\nDigite 0 para sair, ou 1 para jogar: ");
-    vicio = 2;
-    while(vicio != 0 && vicio != 1){
-        scanf("%d",&vicio);
-    }
-    CLEAR;
 }
 int main(){
     while(vicio == 1){
