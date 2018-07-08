@@ -1,5 +1,0 @@
-1 - terminar o O, a partir do segundo sempre da problema, no geral o hp deles nao desce ou da segmentation fault.
-2 - complementar a localizacao do O nas funcoes para incluir o Y pq atualmente se vier 2 O na msm coluna da problema
-3 - Atualizar as instruções por causa das mudanças
-4 - Fazer o sistema de ranking
-5 - ENTREGAR ESSA DISGRASSA
